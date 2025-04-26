@@ -1,6 +1,8 @@
+// src/pages/Account.jsx
 import React, { useEffect, useState } from 'react';
 import { auth } from '../firebaseConfig';
 import { onAuthStateChanged } from 'firebase/auth';
+import { useNavigate } from 'react-router-dom';
 import Topbar from '../components/Topbar';
 import BottomNav from '../components/BottomNav';
 import GoToDashboardButton from '../components/GoToDashboardButton';
@@ -9,6 +11,7 @@ import { useLanguage } from '../hooks/useLanguage'; // 👈 Import
 const Account = () => {
   const { language, changeLanguage, t } = useLanguage();
   const [user, setUser] = useState(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
@@ -26,7 +29,7 @@ const Account = () => {
         <GoToDashboardButton />
 
         <div className="w-full max-w-2xl text-center mt-8">
-          <h1 className="text-3xl font-bold mb-4">{t.myAccount}</h1>
+          <h1 className="text-3xl font-bold mb-6">{t.myAccount}</h1>
 
           {/* Profile Card */}
           <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md w-full mb-8">
@@ -46,29 +49,40 @@ const Account = () => {
           {/* Billing Info */}
           <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md w-full mb-8">
             <h3 className="text-lg font-bold mb-2">{t.billingInfo}</h3>
-            <p className="text-sm mb-2 text-gray-600 dark:text-gray-400">Card: **** **** **** 4242</p>
-            <p className="text-sm mb-4 text-gray-600 dark:text-gray-400">Next Payment: June 30, 2025</p>
-            <button className="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 rounded-md">
+            <p className="text-sm mb-2 text-gray-600 dark:text-gray-400">
+              Card: **** **** **** 4242
+            </p>
+            <p className="text-sm mb-4 text-gray-600 dark:text-gray-400">
+              Next Payment: June 30, 2025
+            </p>
+            <button
+              onClick={() => navigate('/select-plan')} // TEMPORARY redirect
+              className="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-3 rounded-md"
+            >
               {t.manageBilling}
             </button>
           </div>
 
           {/* Settings */}
-          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md w-full">
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md w-full mt-8">
             <h3 className="text-lg font-bold mb-4">{t.settings}</h3>
 
-            <div className="mb-4 text-left">
-              <label className="block text-sm mb-1">{t.emailNotifications}</label>
-              <select className="w-full p-2 rounded bg-gray-200 dark:bg-gray-700 text-black dark:text-white">
+            {/* Email Notifications */}
+            <div className="mb-6 text-left">
+              <label className="block text-sm font-semibold mb-2">{t.emailNotifications}</label>
+              <select
+                className="w-full p-3 rounded-md bg-gray-200 dark:bg-gray-700 text-black dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
                 <option>Enabled</option>
                 <option>Disabled</option>
               </select>
             </div>
 
+            {/* Language Selection */}
             <div className="text-left">
-              <label className="block text-sm mb-1">{t.language}</label>
+              <label className="block text-sm font-semibold mb-2">{t.language}</label>
               <select
-                className="w-full p-2 rounded bg-gray-200 dark:bg-gray-700 text-black dark:text-white"
+                className="w-full p-3 rounded-md bg-gray-200 dark:bg-gray-700 text-black dark:text-white text-base focus:outline-none focus:ring-2 focus:ring-blue-500 truncate"
                 value={language}
                 onChange={(e) => changeLanguage(e.target.value)}
               >
@@ -76,6 +90,7 @@ const Account = () => {
                 <option value="es">Spanish 🇪🇸</option>
                 <option value="de">German 🇩🇪</option>
                 <option value="zh">Mandarin 🇨🇳</option>
+                <option value="fr">French 🇫🇷</option>
               </select>
             </div>
           </div>
