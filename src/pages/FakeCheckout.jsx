@@ -1,8 +1,9 @@
+// src/pages/FakeCheckout.jsx
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
-import { auth, db } from '../firebaseConfig'; // ✅ import db
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore'; // ✅ firestore imports
+import { auth, db } from '../firebaseConfig';
+import { doc, updateDoc, collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import Topbar from '../components/Topbar';
 import BottomNav from '../components/BottomNav';
 import GoToDashboardButton from '../components/GoToDashboardButton';
@@ -27,21 +28,35 @@ const FakeCheckout = () => {
         return;
       }
 
-      // Save subscription to Firestore
-      await addDoc(collection(db, 'subscriptions'), {
-        userId: auth.currentUser.uid,
+      const userId = auth.currentUser.uid;
+
+      // ✅ 1. Update user's active subscription
+      await updateDoc(doc(db, 'users', userId), {
+        subscription: {
+          plan: selectedPlan,
+          price: selectedPlan === 'Pro' ? '$19/mo' : selectedPlan === 'Elite' ? '$49/mo' : '$0/mo',
+          cardLast4: '4242', // Fake card ending for now
+          subscribedAt: serverTimestamp(),
+        }
+      });
+
+      // ✅ 2. Create transaction history
+      await addDoc(collection(db, 'transactions'), {
+        userId,
         plan: selectedPlan,
+        amount: selectedPlan === 'Pro' ? 19 : selectedPlan === 'Elite' ? 49 : 0,
         createdAt: serverTimestamp(),
+        status: 'Success',
       });
 
       toast.success('✅ Payment Successful!');
-      console.log(`Fake payment complete for: ${selectedPlan}`);
+      console.log(`Payment complete for: ${selectedPlan}`);
       
       localStorage.removeItem('selectedPlan');
       navigate('/dashboard');
     } catch (error) {
-      console.error('Error saving subscription:', error);
-      toast.error('❌ Failed to save subscription.');
+      console.error('Error saving payment:', error);
+      toast.error('❌ Payment failed.');
     }
   };
 
@@ -58,7 +73,7 @@ const FakeCheckout = () => {
           <h2 className="text-xl mb-4">
             Selected Plan: <span className="text-blue-500 font-semibold">{selectedPlan}</span>
           </h2>
-          
+
           <p className="text-gray-600 dark:text-gray-400 mb-6">
             Please proceed to finalize your subscription.
           </p>

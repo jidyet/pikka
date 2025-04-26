@@ -10,7 +10,7 @@ const UpgradePage = () => {
   const { plan, status, loading } = useSubscription();
   const navigate = useNavigate();
 
-  const handleUpgrade = () => {
+  const handleManagePlan = () => {
     navigate('/select-plan');
   };
 
@@ -19,7 +19,7 @@ const UpgradePage = () => {
       <div className="min-h-screen flex flex-col bg-gray-100 dark:bg-gray-900 text-white">
         <Topbar />
         <main className="flex-1 flex items-center justify-center">
-          Loading...
+          Loading subscription details...
         </main>
         <BottomNav />
       </div>
@@ -34,32 +34,37 @@ const UpgradePage = () => {
         <GoToDashboardButton />
 
         <div className="w-full max-w-2xl text-center mt-8">
-          <h1 className="text-3xl font-bold mb-6">Upgrade Plan</h1>
+          <h1 className="text-3xl font-bold mb-6">Manage Subscription</h1>
 
           {plan ? (
             <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md mb-6">
-              <h2 className="text-lg font-semibold mb-2">Your Current Plan: {plan}</h2>
+              <h2 className="text-lg font-semibold mb-2">Current Plan: {plan}</h2>
               <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
                 Status: <span className={status === 'Active' ? 'text-green-400' : 'text-red-400'}>{status}</span>
               </p>
+
+              {status === 'Inactive' && (
+                <p className="text-sm text-yellow-400 mb-4">Plan expired. Renew now!</p>
+              )}
+
               <button
-                onClick={handleUpgrade}
+                onClick={handleManagePlan}
                 className="w-full bg-green-500 hover:bg-green-600 text-white py-3 rounded font-semibold"
               >
-                Upgrade to Premium
+                {status === 'Inactive' ? 'Renew Plan' : 'Manage Plan'}
               </button>
             </div>
           ) : (
             <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
               <h2 className="text-lg font-semibold mb-2">No Active Subscription</h2>
               <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-                Choose your plan and start using premium features today!
+                Select a plan to unlock all features.
               </p>
               <button
-                onClick={handleUpgrade}
+                onClick={handleManagePlan}
                 className="w-full bg-blue-500 hover:bg-blue-600 text-white py-3 rounded font-semibold"
               >
-                View Plans
+                View Available Plans
               </button>
             </div>
           )}

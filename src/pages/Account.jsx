@@ -1,12 +1,11 @@
-// src/pages/Account.jsx
 import React, { useEffect, useState } from 'react';
 import { auth } from '../firebaseConfig';
 import { onAuthStateChanged } from 'firebase/auth';
-import { useNavigate } from 'react-router-dom';
 import Topbar from '../components/Topbar';
 import BottomNav from '../components/BottomNav';
 import GoToDashboardButton from '../components/GoToDashboardButton';
-import { useLanguage } from '../hooks/useLanguage'; // 👈 Import
+import { useLanguage } from '../hooks/useLanguage';
+import { useNavigate } from 'react-router-dom';
 
 const Account = () => {
   const { language, changeLanguage, t } = useLanguage();
@@ -25,11 +24,11 @@ const Account = () => {
     <div className="min-h-screen flex flex-col bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-white">
       <Topbar />
 
-      <main className="flex-1 p-6 flex flex-col items-center">
+      <main className="flex-1 p-6 flex flex-col items-center pb-28"> {/* 👈 Add pb-28 here */}
         <GoToDashboardButton />
 
         <div className="w-full max-w-2xl text-center mt-8">
-          <h1 className="text-3xl font-bold mb-6">{t.myAccount}</h1>
+          <h1 className="text-3xl font-bold mb-4">{t.myAccount}</h1>
 
           {/* Profile Card */}
           <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md w-full mb-8">
@@ -56,8 +55,8 @@ const Account = () => {
               Next Payment: June 30, 2025
             </p>
             <button
-              onClick={() => navigate('/select-plan')} // TEMPORARY redirect
-              className="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-3 rounded-md"
+              onClick={() => navigate('/billing')}
+              className="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 rounded-md"
             >
               {t.manageBilling}
             </button>
@@ -71,7 +70,7 @@ const Account = () => {
             <div className="mb-6 text-left">
               <label className="block text-sm font-semibold mb-2">{t.emailNotifications}</label>
               <select
-                className="w-full p-3 rounded-md bg-gray-200 dark:bg-gray-700 text-black dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 rounded-md bg-gray-200 dark:bg-gray-700 text-black dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option>Enabled</option>
                 <option>Disabled</option>
@@ -82,15 +81,15 @@ const Account = () => {
             <div className="text-left">
               <label className="block text-sm font-semibold mb-2">{t.language}</label>
               <select
-                className="w-full p-3 rounded-md bg-gray-200 dark:bg-gray-700 text-black dark:text-white text-base focus:outline-none focus:ring-2 focus:ring-blue-500 truncate"
+                className="w-full px-3 py-2 rounded-md bg-gray-200 dark:bg-gray-700 text-black dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 value={language}
                 onChange={(e) => changeLanguage(e.target.value)}
               >
-                <option value="en">English 🇺🇸</option>
-                <option value="es">Spanish 🇪🇸</option>
-                <option value="de">German 🇩🇪</option>
-                <option value="zh">Mandarin 🇨🇳</option>
-                <option value="fr">French 🇫🇷</option>
+                <option value="en">🇺🇸 English</option>
+                <option value="es">🇪🇸 Spanish</option>
+                <option value="de">🇩🇪 German</option>
+                <option value="zh">🇨🇳 Mandarin</option>
+                <option value="fr">🇫🇷 French</option>
               </select>
             </div>
           </div>
