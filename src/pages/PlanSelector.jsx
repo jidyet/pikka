@@ -1,27 +1,36 @@
-import React, { useState } from 'react';
+// src/pages/PlanSelector.jsx
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import Topbar from '../components/Topbar';
 import BottomNav from '../components/BottomNav';
 import GoToDashboardButton from '../components/GoToDashboardButton';
-import { useLanguage } from '../hooks/useLanguage'; // ✅ Language hook
 
 const plans = [
-  { name: 'Basic', price: '$0', features: ['Limited Access', 'Basic Support'] },
-  { name: 'Pro', price: '$19.99', features: ['Full Access', 'Priority Support', 'Early Updates'] },
-  { name: 'Ultimate', price: '$49.99', features: ['Everything in Pro', 'Dedicated Manager', 'Custom Features'] },
+  {
+    name: 'Basic',
+    price: '$0/mo',
+    description: 'Great for beginners. Limited features.',
+    features: ['1 Linked Account', 'Basic Analytics', 'Community Access'],
+  },
+  {
+    name: 'Pro',
+    price: '$19/mo',
+    description: 'Perfect for regular users. Full access.',
+    features: ['Unlimited Accounts', 'Advanced Analytics', 'Priority Support'],
+  },
+  {
+    name: 'Elite',
+    price: '$49/mo',
+    description: 'For power users. Premium support and features.',
+    features: ['Everything in Pro', 'Private Beta Access', 'Dedicated Manager'],
+  },
 ];
 
 const PlanSelector = () => {
   const navigate = useNavigate();
-  const { t } = useLanguage();
-  const [selected, setSelected] = useState(null);
 
-  const handleContinue = () => {
-    if (!selected) {
-      alert('Please select a plan first.');
-      return;
-    }
-    localStorage.setItem('selectedPlan', selected.name);
+  const handleSelect = (planName) => {
+    localStorage.setItem('selectedPlan', planName); // Temporarily store
     navigate('/confirm-plan');
   };
 
@@ -32,37 +41,31 @@ const PlanSelector = () => {
       <main className="flex-1 p-6 flex flex-col items-center">
         <GoToDashboardButton />
 
-        <div className="w-full max-w-5xl text-center mt-8">
-          <h1 className="text-3xl font-bold mb-6">{t.selectPlan}</h1>
+        <h1 className="text-3xl font-bold mb-8 text-center">Select Your Plan</h1>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {plans.map((plan) => (
-              <div
-                key={plan.name}
-                onClick={() => setSelected(plan)}
-                className={`cursor-pointer bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md flex flex-col items-center transition-all ${
-                  selected?.name === plan.name
-                    ? 'border-2 border-blue-500 scale-105'
-                    : 'border border-transparent'
-                }`}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-6xl">
+          {plans.map((plan) => (
+            <div
+              key={plan.name}
+              className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md flex flex-col items-center text-center"
+            >
+              <h2 className="text-2xl font-semibold mb-2">{plan.name}</h2>
+              <p className="text-xl text-blue-500 mb-4">{plan.price}</p>
+              <p className="text-gray-600 dark:text-gray-400 mb-4">{plan.description}</p>
+              <ul className="text-sm text-gray-600 dark:text-gray-400 mb-6 space-y-2">
+                {plan.features.map((feature, idx) => (
+                  <li key={idx}>✅ {feature}</li>
+                ))}
+              </ul>
+
+              <button
+                onClick={() => handleSelect(plan.name)}
+                className="mt-auto w-full bg-blue-500 hover:bg-blue-600 text-white py-2 rounded-md font-semibold"
               >
-                <h2 className="text-xl font-semibold mb-2">{plan.name}</h2>
-                <p className="text-2xl font-bold text-blue-500 mb-4">{plan.price}</p>
-                <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-1 mb-4">
-                  {plan.features.map((feature, idx) => (
-                    <li key={idx}>- {feature}</li>
-                  ))}
-                </ul>
-              </div>
-            ))}
-          </div>
-
-          <button
-            onClick={handleContinue}
-            className="mt-8 w-full max-w-xs bg-blue-500 hover:bg-blue-600 text-white py-3 rounded-md font-semibold"
-          >
-            {t.continue || 'Continue'}
-          </button>
+                Choose {plan.name}
+              </button>
+            </div>
+          ))}
         </div>
       </main>
 
