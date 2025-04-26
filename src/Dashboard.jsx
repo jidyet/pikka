@@ -2,11 +2,15 @@ import React, { useEffect, useState } from 'react';
 import { auth, db } from './firebaseConfig';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import Topbar from './components/Topbar';
+import { useLanguage } from './hooks/useLanguage'; // 👈 Import useLanguage
+import BottomNav from './components/BottomNav';
+import GoToDashboardButton from './components/GoToDashboardButton';
 
 const Dashboard = () => {
   const [linkedAccounts, setLinkedAccounts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [botActive, setBotActive] = useState(false); // ✅ new state for toggle
+  const [botActive, setBotActive] = useState(false);
+  const { t } = useLanguage(); // 👈 useLanguage hook here
 
   const firstName = auth.currentUser?.displayName
     ? auth.currentUser.displayName.split(' ')[0]
@@ -55,7 +59,7 @@ const Dashboard = () => {
 
       <div className="flex flex-col items-center px-6 py-10">
         {/* Welcome */}
-        <h1 className="text-2xl font-bold mb-2">Welcome {firstName}</h1>
+        <h1 className="text-2xl font-bold mb-2">{t.welcome} {firstName}</h1>
 
         {/* Linked Account Card */}
         {linkedAccounts.length > 0 && (
@@ -95,7 +99,7 @@ const Dashboard = () => {
 
         {/* Usage stats */}
         <div className="w-full max-w-md bg-gray-800 p-6 rounded-lg shadow-md mb-6">
-          <h3 className="text-lg font-bold mb-4">Bot Usage (Last 24 Hours)</h3>
+          <h3 className="text-lg font-bold mb-4">{t.usage || "Bot Usage (Last 24 Hours)"}</h3>
           <div className="flex justify-between text-center text-sm">
             <div className="flex-1">
               <p className="text-green-400">Good</p>
@@ -115,14 +119,16 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Payment Expired */}
+        {/* Payment expired */}
         <div className="w-full max-w-md flex justify-between items-center bg-gray-700 p-4 rounded-md">
-          <p className="text-sm">Payment is now expired.</p>
+          <p className="text-sm">{t.paymentExpired || "Payment is now expired."}</p>
           <button className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md text-sm">
             + ADD TIME
           </button>
         </div>
       </div>
+
+      <BottomNav />
     </div>
   );
 };

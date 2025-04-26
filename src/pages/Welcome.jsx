@@ -1,45 +1,48 @@
-import React, { useState, useEffect } from 'react';
+// src/pages/Welcome.jsx
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Topbar from '../components/Topbar';
-import GoToDashboardButton from '../components/GoToDashboardButton';
 import BottomNav from '../components/BottomNav';
+import GoToDashboardButton from '../components/GoToDashboardButton';
+import { useLanguage } from '../hooks/useLanguage'; // 🛜 Now working correctly
 
 const slides = [
   {
-    title: 'AI-Powered Algorithm',
+    titleKey: 'dashboard',
     description: 'Analyzes and prioritizes higher-paying gigs to maximize your earnings.',
     image: '/assets/slide1-ai.png',
   },
   {
-    title: 'Mobile-Friendly',
+    titleKey: 'usage',
     description: 'Seamless experience across iOS and Android devices.',
     image: '/assets/slide4-mobile.png',
   },
   {
-    title: 'Remote Check-In',
+    titleKey: 'linkedAccounts',
     description: 'Manage offers from anywhere without missing opportunities.',
     image: '/assets/slide5-checkin.png',
   },
   {
-    title: 'Advanced Filters',
+    titleKey: 'upgrade',
     description: 'Filter gigs based on price, time, or preferences.',
     image: '/assets/slide3-filters.png',
   },
   {
-    title: 'Schedule Manager',
+    titleKey: 'selectPlan',
     description: 'Organize your upcoming offers with our integrated calendar.',
     image: '/assets/slide2-schedule.png',
   },
 ];
 
 const Welcome = () => {
+  const { t } = useLanguage(); // 🛜 Pull translations
   const [current, setCurrent] = useState(0);
   const navigate = useNavigate();
 
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrent((prev) => (prev + 1) % slides.length);
-    }, 4000); // Change every 4 seconds
+    }, 4000);
     return () => clearInterval(timer);
   }, []);
 
@@ -59,18 +62,18 @@ const Welcome = () => {
         <div className="w-full max-w-md text-center">
           <img
             src={slides[current].image}
-            alt={slides[current].title}
+            alt={slides[current].titleKey}
             className="w-52 h-52 object-contain mx-auto mb-4 transition-all duration-500"
           />
 
           <h2 className="text-xl font-semibold text-gray-800 dark:text-white mb-2">
-            {slides[current].title}
+            {t[slides[current].titleKey]}
           </h2>
           <p className="text-sm text-gray-600 dark:text-gray-300 mb-6">
             {slides[current].description}
           </p>
 
-          {/* Dots indicator */}
+          {/* Dots Indicator */}
           <div className="flex justify-center gap-2 mb-6">
             {slides.map((_, index) => (
               <div
@@ -89,13 +92,13 @@ const Welcome = () => {
               onClick={() => navigate('/login')}
               className="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-3 rounded"
             >
-              Sign In
+              {t.continue} (Login)
             </button>
             <button
               onClick={() => navigate('/register')}
               className="w-full bg-gray-800 hover:bg-gray-700 text-white font-semibold py-3 rounded"
             >
-              Register
+              {t.continue} (Register)
             </button>
           </div>
         </div>
