@@ -2,11 +2,19 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-hot-toast';
-import { auth, db } from '../firebaseConfig';
-import { doc, updateDoc, collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { loadStripe } from '@stripe/stripe-js'; // 👈 Stripe Import
 import Topbar from '../components/Topbar';
 import BottomNav from '../components/BottomNav';
 import GoToDashboardButton from '../components/GoToDashboardButton';
+
+// ✅ Put your Stripe Public Key here (Publishable Key)
+const stripePromise = loadStripe('pk_test_51RHeDg4DsBIdwdg1PXTYgjNI83sZfHykbcGQsCc1lS4Itwg6sYVJ5vfKHBzjjhFx6lr0Nx8gVmf6tspxLAw7HZAj00fu9cqzJt'); // replace with your real key
+
+// ✅ Mapping plan to Price IDs
+const PRICE_IDS = {
+  'Pro': 'price_12345abcde',    // replace with your Stripe price ID
+  'Elite': 'price_67890vwxyz',  // replace with your Stripe price ID
+};
 
 const FakeCheckout = () => {
   const navigate = useNavigate();
@@ -21,42 +29,37 @@ const FakeCheckout = () => {
     }
   }, [navigate]);
 
-  const handleFakePayment = async () => {
+  const handleStripeCheckout = async () => {
     try {
-      if (!auth.currentUser) {
-        toast.error('User not authenticated.');
+      const stripe = await stripePromise;
+      if (!stripe) {
+        toast.error('Stripe not initialized.');
         return;
       }
 
-      const userId = auth.currentUser.uid;
+      const priceId = PRICE_IDS[selectedPlan];
+      if (!priceId) {
+        toast.error('Invalid Plan Selected');
+        return;
+      }
 
-      // ✅ 1. Update user's active subscription
-      await updateDoc(doc(db, 'users', userId), {
-        subscription: {
-          plan: selectedPlan,
-          price: selectedPlan === 'Pro' ? '$19/mo' : selectedPlan === 'Elite' ? '$49/mo' : '$0/mo',
-          cardLast4: '4242', // Fake card ending for now
-          subscribedAt: serverTimestamp(),
-        }
+      const { error } = await stripe.redirectToCheckout({
+        lineItems: [
+          { price: priceId, quantity: 1 },
+        ],
+        mode: 'subscription', // recurring payment
+        successUrl: `${window.location.origin}/dashboard`, // after payment
+        cancelUrl: `${window.location.origin}/select-plan`, // if user cancels
+        customerEmail: "test@example.com", // optional if you want prefill (later dynamic)
       });
 
-      // ✅ 2. Create transaction history
-      await addDoc(collection(db, 'transactions'), {
-        userId,
-        plan: selectedPlan,
-        amount: selectedPlan === 'Pro' ? 19 : selectedPlan === 'Elite' ? 49 : 0,
-        createdAt: serverTimestamp(),
-        status: 'Success',
-      });
-
-      toast.success('✅ Payment Successful!');
-      console.log(`Payment complete for: ${selectedPlan}`);
-      
-      localStorage.removeItem('selectedPlan');
-      navigate('/dashboard');
-    } catch (error) {
-      console.error('Error saving payment:', error);
-      toast.error('❌ Payment failed.');
+      if (error) {
+        console.error(error);
+        toast.error(error.message);
+      }
+    } catch (err) {
+      console.error('Checkout Error:', err);
+      toast.error('Something went wrong.');
     }
   };
 
@@ -75,14 +78,14 @@ const FakeCheckout = () => {
           </h2>
 
           <p className="text-gray-600 dark:text-gray-400 mb-6">
-            Please proceed to finalize your subscription.
+            You will be redirected to secure Stripe Checkout.
           </p>
 
           <button
-            onClick={handleFakePayment}
+            onClick={handleStripeCheckout}
             className="w-full bg-green-500 hover:bg-green-600 text-white font-semibold py-3 rounded-md"
           >
-            Complete Payment
+            Pay with Stripe
           </button>
         </div>
       </main>
