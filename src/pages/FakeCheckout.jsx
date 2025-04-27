@@ -8,11 +8,13 @@ import Topbar from '../components/Topbar';
 import BottomNav from '../components/BottomNav';
 import GoToDashboardButton from '../components/GoToDashboardButton';
 
+// ✅ Initialize Stripe
 const stripePromise = loadStripe('pk_test_51RHeDg4DsBIdwdg1PXTYgjNI83sZfHykbcGQsCc1lS4Itwg6sYVJ5vfKHBzjjhFx6lr0Nx8gVmf6tspxLAw7HZAj00fu9cqzJt');
 
+// ✅ Plan to Stripe Price IDs mapping
 const PRICE_IDS = {
-  'Pro': 'price_12345abcde',    // 🔥 change to your real Stripe Price ID
-  'Elite': 'price_67890vwxyz',  // 🔥 change to your real Stripe Price ID
+  'Pro': 'price_12345abcde',    // replace with your Stripe price ID
+  'Elite': 'price_67890vwxyz',  // replace with your Stripe price ID
 };
 
 const FakeCheckout = () => {
@@ -56,13 +58,11 @@ const FakeCheckout = () => {
       const userEmail = auth.currentUser?.email || '';
 
       const { error } = await stripe.redirectToCheckout({
-        lineItems: [
-          { price: priceId, quantity: 1 },
-        ],
+        lineItems: [{ price: priceId, quantity: 1 }],
         mode: 'subscription',
         successUrl: `${window.location.origin}/dashboard`,
         cancelUrl: `${window.location.origin}/select-plan`,
-        customerEmail: userEmail, // ✅ Auto prefill logged in user email
+        customerEmail: userEmail,
       });
 
       if (error) {
@@ -77,8 +77,8 @@ const FakeCheckout = () => {
 
   if (loadingUser) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-white">
-        Loading...
+      <div className="min-h-screen flex items-center justify-center text-gray-900 dark:text-white">
+        Verifying your account...
       </div>
     );
   }
@@ -86,16 +86,21 @@ const FakeCheckout = () => {
   return (
     <div className="min-h-screen flex flex-col bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-white">
       <Topbar />
+
       <main className="flex-1 p-6 flex flex-col items-center text-center">
         <GoToDashboardButton />
+
         <h1 className="text-3xl font-bold mb-6">Complete Your Payment</h1>
+
         <div className="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-md w-full max-w-md">
           <h2 className="text-xl mb-4">
             Selected Plan: <span className="text-blue-500 font-semibold">{selectedPlan}</span>
           </h2>
+
           <p className="text-gray-600 dark:text-gray-400 mb-6">
             You will be redirected to secure Stripe Checkout.
           </p>
+
           <button
             onClick={handleStripeCheckout}
             className="w-full bg-green-500 hover:bg-green-600 text-white font-semibold py-3 rounded-md"
@@ -104,6 +109,7 @@ const FakeCheckout = () => {
           </button>
         </div>
       </main>
+
       <BottomNav />
     </div>
   );

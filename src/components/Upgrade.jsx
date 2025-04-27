@@ -1,4 +1,3 @@
-// src/pages/Upgrade.jsx
 import React, { useEffect, useState } from 'react';
 import { auth, db } from '../firebaseConfig';
 import { doc, getDoc } from 'firebase/firestore';
@@ -6,6 +5,7 @@ import Topbar from '../components/Topbar';
 import BottomNav from '../components/BottomNav';
 import GoToDashboardButton from '../components/GoToDashboardButton';
 import { useNavigate } from 'react-router-dom';
+import { useLanguage } from '../contexts/LanguageProvider'; // ✅
 
 const availablePlans = [
   { name: 'Basic', price: '$0/mo', description: 'Good for casual users.' },
@@ -15,6 +15,7 @@ const availablePlans = [
 
 const Upgrade = () => {
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const [currentPlan, setCurrentPlan] = useState('');
   const [loading, setLoading] = useState(true);
 
@@ -52,23 +53,23 @@ const Upgrade = () => {
       <main className="flex-1 p-6 flex flex-col items-center">
         <GoToDashboardButton />
 
-        <h1 className="text-3xl font-bold mb-6">Upgrade Your Plan</h1>
+        <h1 className="text-3xl font-bold mb-6">{t.upgradePlan || "Upgrade Your Plan"}</h1>
 
         {loading ? (
-          <p className="text-gray-500 dark:text-gray-400">Loading current plan...</p>
+          <p className="text-gray-500 dark:text-gray-400">{t.loading || "Loading current plan..."}</p>
         ) : (
           <>
             {currentPlan ? (
               <p className="mb-6 text-gray-600 dark:text-gray-400">
-                Your current plan: <span className="text-blue-500 font-semibold">{currentPlan}</span>
+                {t.yourCurrentPlan || "Your current plan:"} <span className="text-blue-500 font-semibold">{currentPlan}</span>
               </p>
             ) : (
-              <p className="mb-6 text-red-500 font-semibold">You have no active subscription.</p>
+              <p className="mb-6 text-red-500 font-semibold">{t.noSubscription || "You have no active subscription."}</p>
             )}
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl w-full">
               {availablePlans
-                .filter(plan => plan.name !== currentPlan) // hide current plan
+                .filter(plan => plan.name !== currentPlan)
                 .map((plan) => (
                   <div
                     key={plan.name}
@@ -82,7 +83,7 @@ const Upgrade = () => {
                       onClick={() => handleSelectPlan(plan.name)}
                       className="w-full bg-blue-500 hover:bg-blue-600 text-white py-2 rounded-md font-semibold"
                     >
-                      Choose {plan.name}
+                      {t.choosePlan || "Choose"} {plan.name}
                     </button>
                   </div>
                 ))}

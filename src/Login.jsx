@@ -1,11 +1,14 @@
+// src/Login.jsx
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from './firebaseConfig';
 import { Eye, EyeOff } from 'lucide-react';
+import { useLanguage } from './hooks/useLanguage'; // ✅ Added
 
 const Login = () => {
   const navigate = useNavigate();
+  const { t } = useLanguage(); // ✅ Get translations
   const [form, setForm] = useState({ email: '', password: '' });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -22,12 +25,10 @@ const Login = () => {
 
     try {
       await signInWithEmailAndPassword(auth, form.email, form.password);
-
-      // ✅ On successful login, redirect to dashboard
       navigate('/dashboard');
     } catch (err) {
       console.error(err);
-      setError(err.message || 'Failed to sign in');
+      setError(err.message || t.loginFailed || 'Failed to sign in');
     } finally {
       setLoading(false);
     }
@@ -35,11 +36,11 @@ const Login = () => {
 
   return (
     <div className="min-h-screen flex flex-col justify-center items-center bg-[#0f111a] text-white px-6">
-      <h1 className="text-2xl font-semibold mb-6">Sign In</h1>
+      <h1 className="text-2xl font-semibold mb-6">{t.loginTitle || 'Sign In'}</h1>
 
       <form onSubmit={handleLogin} className="w-full max-w-sm space-y-4">
         <div>
-          <label className="block text-sm mb-1">Email</label>
+          <label className="block text-sm mb-1">{t.email || 'Email'}</label>
           <input
             name="email"
             type="email"
@@ -52,7 +53,7 @@ const Login = () => {
         </div>
 
         <div>
-          <label className="block text-sm mb-1">Password</label>
+          <label className="block text-sm mb-1">{t.password || 'Password'}</label>
           <div className="relative">
             <input
               name="password"
@@ -80,16 +81,16 @@ const Login = () => {
           disabled={loading}
           className="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-3 rounded disabled:opacity-50"
         >
-          {loading ? 'Signing In...' : 'Sign In'}
+          {loading ? (t.signingIn || 'Signing In...') : (t.signIn || 'Sign In')}
         </button>
 
         <p className="text-sm text-center text-gray-400 mt-4">
-          Don’t have an account?{' '}
+          {t.noAccount || "Don’t have an account?"}{" "}
           <span
             className="text-blue-400 cursor-pointer"
             onClick={() => navigate('/register')}
           >
-            Register Now
+            {t.registerNow || 'Register Now'}
           </span>
         </p>
       </form>

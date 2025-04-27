@@ -1,84 +1,55 @@
 import React, { useEffect, useState } from 'react';
-import { collection, query, where, onSnapshot } from 'firebase/firestore';
-import { auth, db } from '../firebaseConfig';
+import { useNavigate } from 'react-router-dom';
+import { db } from '../firebaseConfig';
+import { collection, query, where, getDocs } from 'firebase/firestore';
+import { useAuth } from '../contexts/AuthContext';
 import Topbar from '../components/Topbar';
 import BottomNav from '../components/BottomNav';
 import GoToDashboardButton from '../components/GoToDashboardButton';
-import { useLanguage } from '../hooks/useLanguage'; // ✅ Language hook added
 
 const LinkedAccounts = () => {
+  const { user, loading } = useAuth();
   const [accounts, setAccounts] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const { t } = useLanguage();
+  const navigate = useNavigate();
 
   useEffect(() => {
-    const user = auth.currentUser;
-    if (!user) return;
+    if (!loading && !user) {
+      navigate('/login');
+    }
+    if (user) {
+      const fetchAccounts = async () => {
+        const q = query(collection(db, 'linkedAccounts'), where('userId', '==', user.uid));
+        const querySnapshot = await getDocs(q);
+        setAccounts(querySnapshot.docs.map(doc => doc.data()));
+      };
+      fetchAccounts();
+    }
+  }, [user, loading, navigate]);
 
-    const q = query(
-      collection(db, 'linkedAccounts'),
-      where('userId', '==', user.uid)
-    );
-
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const data = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-      setAccounts(data);
-      setLoading(false);
-    });
-
-    return () => unsubscribe();
-  }, []);
+  if (loading) {
+    return <div className="min-h-screen flex items-center justify-center text-white">Loading...</div>;
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-white">
       <Topbar />
-
       <main className="flex-1 p-6 flex flex-col items-center">
         <GoToDashboardButton />
+        <h1 className="text-2xl font-bold mb-6">Linked Accounts</h1>
 
-        <div className="w-full max-w-5xl text-center mt-8">
-          <h1 className="text-3xl font-bold mb-6">{t.linkedAccounts}</h1>
-
-          {loading ? (
-            <p className="text-gray-500 dark:text-gray-400">{t.loading || "Loading..."}</p>
-          ) : accounts.length === 0 ? (
-            <p className="text-gray-500 dark:text-gray-400">{t.noLinkedAccounts || "No linked accounts found."}</p>
+        <div className="w-full max-w-2xl">
+          {accounts.length === 0 ? (
+            <p className="text-center">No linked accounts yet.</p>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {accounts.map((account) => (
-                <div
-                  key={account.id}
-                  className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md flex flex-col items-center"
-                >
-                  <img
-                    src="/default-avatar.png"
-                    alt="Account Avatar"
-                    className="w-20 h-20 rounded-full mb-4"
-                  />
-                  <h2 className="text-lg font-semibold">{account.username}</h2>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">{account.platform}</p>
-                  <p className="text-xs mt-2">
-                    {t.status || "Status"}:{' '}
-                    <span
-                      className={`font-semibold ${
-                        account.status === 'Active'
-                          ? 'text-green-500'
-                          : 'text-gray-400'
-                      }`}
-                    >
-                      {account.status}
-                    </span>
-                  </p>
-                </div>
-              ))}
-            </div>
+            accounts.map((account, idx) => (
+              <div key={idx} className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-md mb-4">
+                <h2 className="text-lg font-semibold">{account.username}</h2>
+                <p className="text-sm text-gray-600 dark:text-gray-400">{account.platform}</p>
+              </div>
+            ))
           )}
         </div>
       </main>
-
       <BottomNav />
     </div>
   );

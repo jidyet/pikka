@@ -2,6 +2,7 @@ import React from 'react';
 import Topbar from '../components/Topbar';
 import BottomNav from '../components/BottomNav';
 import GoToDashboardButton from '../components/GoToDashboardButton';
+import { useLanguage } from '../contexts/LanguageProvider'; // ✅
 
 const actions = [
   { time: '2 mins ago', action: 'Linked Twitter', result: 'Success' },
@@ -10,6 +11,8 @@ const actions = [
 ];
 
 const UsageTable = () => {
+  const { t } = useLanguage(); // ✅
+
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-white flex flex-col">
       <Topbar />
@@ -17,15 +20,15 @@ const UsageTable = () => {
       <main className="flex-1 p-6">
         <GoToDashboardButton />
 
-        <h1 className="text-2xl font-bold mb-6">Recent Activity</h1>
+        <h1 className="text-2xl font-bold mb-6">{t.recentActivity || "Recent Activity"}</h1>
 
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="text-left border-b border-gray-200 dark:border-gray-700">
-                <th className="p-4 text-gray-700 dark:text-gray-300">Time</th>
-                <th className="p-4 text-gray-700 dark:text-gray-300">Action</th>
-                <th className="p-4 text-gray-700 dark:text-gray-300">Status</th>
+                <th className="p-4 text-gray-700 dark:text-gray-300">{t.time || "Time"}</th>
+                <th className="p-4 text-gray-700 dark:text-gray-300">{t.action || "Action"}</th>
+                <th className="p-4 text-gray-700 dark:text-gray-300">{t.status || "Status"}</th>
               </tr>
             </thead>
             <tbody>
@@ -41,7 +44,7 @@ const UsageTable = () => {
                           : 'bg-yellow-500 text-white'
                       }`}
                     >
-                      {item.result}
+                      {item.result === 'Success' ? (t.success || "Success") : (t.pending || "Pending")}
                     </span>
                   </td>
                 </tr>

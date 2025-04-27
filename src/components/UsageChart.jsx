@@ -13,6 +13,7 @@ import {
 import Topbar from '../components/Topbar';
 import BottomNav from '../components/BottomNav';
 import GoToDashboardButton from '../components/GoToDashboardButton';
+import { useLanguage } from '../contexts/LanguageProvider'; // ✅ Import Language hook
 
 ChartJS.register(
   LineElement,
@@ -24,11 +25,13 @@ ChartJS.register(
 );
 
 const UsageChart = () => {
+  const { t } = useLanguage(); // ✅
+
   const data = {
     labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
     datasets: [
       {
-        label: 'Daily Actions',
+        label: t.dailyActions || 'Daily Actions', // ✅ Dynamic label
         data: [12, 19, 7, 14, 21, 10, 16],
         fill: false,
         borderColor: '#3b82f6',
@@ -44,26 +47,18 @@ const UsageChart = () => {
     plugins: {
       legend: {
         labels: {
-          color: '#374151', // light mode text
+          color: '#374151',
         }
       }
     },
     scales: {
       x: {
-        ticks: {
-          color: '#6b7280' // Tailwind gray-500
-        },
-        grid: {
-          color: '#e5e7eb'
-        }
+        ticks: { color: '#6b7280' },
+        grid: { color: '#e5e7eb' }
       },
       y: {
-        ticks: {
-          color: '#6b7280'
-        },
-        grid: {
-          color: '#e5e7eb'
-        }
+        ticks: { color: '#6b7280' },
+        grid: { color: '#e5e7eb' }
       }
     }
   };
@@ -75,7 +70,7 @@ const UsageChart = () => {
       <main className="flex-1 p-6">
         <GoToDashboardButton />
 
-        <h1 className="text-2xl font-bold mb-6">Weekly Usage Chart</h1>
+        <h1 className="text-2xl font-bold mb-6">{t.weeklyUsage || "Weekly Usage Chart"}</h1>
 
         <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow w-full">
           <Line data={data} options={options} />

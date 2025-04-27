@@ -1,12 +1,15 @@
+// src/Register.jsx
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
 import { auth, db } from './firebaseConfig';
 import { Eye, EyeOff } from 'lucide-react';
+import { useLanguage } from './hooks/useLanguage'; // ✅ Added
 
 const Register = () => {
   const navigate = useNavigate();
+  const { t } = useLanguage(); // ✅ Get translations
   const [form, setForm] = useState({ name: '', email: '', password: '' });
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
@@ -23,11 +26,8 @@ const Register = () => {
 
     try {
       const { user } = await createUserWithEmailAndPassword(auth, form.email, form.password);
-
-      // Set display name
       await updateProfile(user, { displayName: form.name });
 
-      // Save to Firestore
       await setDoc(doc(db, 'users', user.uid), {
         uid: user.uid,
         name: form.name,
@@ -38,7 +38,7 @@ const Register = () => {
       navigate('/dashboard');
     } catch (err) {
       console.error(err);
-      setError(err.message || 'Failed to create account');
+      setError(err.message || t.registrationFailed || 'Failed to create account');
     } finally {
       setLoading(false);
     }
@@ -46,24 +46,24 @@ const Register = () => {
 
   return (
     <div className="min-h-screen flex flex-col justify-center items-center bg-[#0f111a] text-white px-6">
-      <h1 className="text-2xl font-semibold mb-6">Register</h1>
+      <h1 className="text-2xl font-semibold mb-6">{t.registerTitle || 'Register'}</h1>
 
       <form onSubmit={handleSubmit} className="w-full max-w-sm space-y-4">
         <div>
-          <label className="block text-sm mb-1">Full Name</label>
+          <label className="block text-sm mb-1">{t.fullName || 'Full Name'}</label>
           <input
             name="name"
             type="text"
             required
             value={form.name}
             onChange={handleChange}
-            placeholder="Enter your name"
+            placeholder={t.enterYourName || "Enter your name"}
             className="w-full px-4 py-3 rounded bg-[#1d1f29] focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
 
         <div>
-          <label className="block text-sm mb-1">Email</label>
+          <label className="block text-sm mb-1">{t.email || 'Email'}</label>
           <input
             name="email"
             type="email"
@@ -76,7 +76,7 @@ const Register = () => {
         </div>
 
         <div>
-          <label className="block text-sm mb-1">Password</label>
+          <label className="block text-sm mb-1">{t.password || 'Password'}</label>
           <div className="relative">
             <input
               name="password"
@@ -85,7 +85,7 @@ const Register = () => {
               value={form.password}
               onChange={handleChange}
               className="w-full px-4 py-3 rounded bg-yellow-100 text-black pr-10"
-              placeholder="Enter password"
+              placeholder={t.enterPassword || "Enter password"}
             />
             <button
               type="button"
@@ -104,16 +104,16 @@ const Register = () => {
           disabled={loading}
           className="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-3 rounded disabled:opacity-50"
         >
-          {loading ? 'Creating...' : 'Create Account'}
+          {loading ? (t.creating || 'Creating...') : (t.createAccount || 'Create Account')}
         </button>
 
         <p className="text-sm text-center text-gray-400">
-          Already have an account?{' '}
+          {t.haveAccount || 'Already have an account?'}{" "}
           <span
             className="text-blue-400 cursor-pointer"
             onClick={() => navigate('/login')}
           >
-            Sign In
+            {t.signIn || 'Sign In'}
           </span>
         </p>
       </form>
