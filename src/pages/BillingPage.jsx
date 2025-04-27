@@ -1,18 +1,32 @@
+// 💥 Same imports as before
 import React, { useEffect, useState } from 'react';
 import { auth, db } from '../firebaseConfig';
-import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, collection, query, where, getDocs, addDoc } from 'firebase/firestore';
 import Topbar from '../components/Topbar';
 import BottomNav from '../components/BottomNav';
 import GoToDashboardButton from '../components/GoToDashboardButton';
-import { useNavigate } from 'react-router-dom';
-import { useLanguage } from '../contexts/LanguageProvider'; // ✅
+import { useNavigate, useLocation } from 'react-router-dom';
+import { useLanguage } from '../contexts/LanguageProvider';
+import { loadStripe } from '@stripe/stripe-js';
+import toast from 'react-hot-toast';
+
+const stripePromise = loadStripe('YOUR_PUBLISHABLE_KEY_HERE');
 
 const BillingPage = () => {
   const [subscription, setSubscription] = useState(null);
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [selectedPlan, setSelectedPlan] = useState('basic');
+  const [billingCycle, setBillingCycle] = useState('weekly');
   const navigate = useNavigate();
-  const { t } = useLanguage(); // ✅
+  const location = useLocation();
+  const { t } = useLanguage();
+
+  const planOptions = {
+    basic: { name: 'Basic Plan', weekly: 500, biweekly: 900, monthly: 1900 },
+    premium: { name: 'Premium Plan', weekly: 1000, biweekly: 1900, monthly: 2900 },
+    pro: { name: 'Pro Plan', weekly: 2000, biweekly: 3900, monthly: 5900 },
+  };
 
   useEffect(() => {
     const fetchBillingInfo = async () => {
@@ -42,65 +56,177 @@ const BillingPage = () => {
     fetchBillingInfo();
   }, [navigate]);
 
+  useEffect(() => {
+    const query = new URLSearchParams(location.search);
+    const status = query.get('status');
+    const sessionId = query.get('session_id');
+
+    const updateSubscriptionAndSaveTransaction = async (sessionId) => {
+      if (!auth.currentUser) return;
+
+      try {
+        const response = await fetch(`http://localhost:5000/retrieve-checkout-session?sessionId=${sessionId}`);
+        const session = await response.json();
+
+        const userDocRef = doc(db, 'users', auth.currentUser.uid);
+        await updateDoc(userDocRef, {
+          subscription: {
+            plan: session.metadata.planName,
+            billingCycle: session.metadata.billingCycle,
+            price: `$${(session.amount_total / 100).toFixed(2)}`,
+            status: session.subscriptionStatus,
+            stripeCustomerId: session.customerId,
+            stripeSubscriptionId: session.subscriptionId,
+            nextBillingDate: session.currentPeriodEnd,
+          }
+        });
+
+        await addDoc(collection(db, 'transactions'), {
+          userId: auth.currentUser.uid,
+          amount: (session.amount_total / 100).toFixed(2),
+          status: 'Success',
+          plan: session.metadata.planName,
+          billingCycle: session.metadata.billingCycle,
+          receiptUrl: '',
+          createdAt: new Date(),
+        });
+
+        console.log('Subscription updated & transaction saved!');
+      } catch (error) {
+        console.error('Error updating subscription or saving transaction:', error);
+      }
+    };
+
+    if (status === 'success' && sessionId) {
+      toast.success('Payment Successful! 🎉');
+      updateSubscriptionAndSaveTransaction(sessionId);
+
+      setTimeout(() => {
+        navigate('/billing', { replace: true });
+      }, 2000);
+    } else if (status === 'cancel') {
+      toast.error('Payment Cancelled.');
+      setTimeout(() => {
+        navigate('/billing', { replace: true });
+      }, 2000);
+    }
+  }, [location, navigate]);
+
+  const handleCheckout = async () => {
+    const stripe = await stripePromise;
+
+    const price = planOptions[selectedPlan][billingCycle];
+
+    const response = await fetch('http://localhost:5000/create-checkout-session', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        price,
+        planName: planOptions[selectedPlan].name,
+        billingCycle,
+      }),
+    });
+
+    const session = await response.json();
+    await stripe.redirectToCheckout({ sessionId: session.id });
+  };
+
+  const handleManageSubscription = async () => {
+    if (!auth.currentUser) return;
+
+    try {
+      const userDoc = await getDoc(doc(db, 'users', auth.currentUser.uid));
+      if (userDoc.exists()) {
+        const customerId = userDoc.data().subscription?.stripeCustomerId;
+        if (!customerId) {
+          toast.error('No Stripe Customer ID found.');
+          return;
+        }
+
+        const response = await fetch('http://localhost:5000/create-customer-portal-session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ customerId }),
+        });
+
+        const { url } = await response.json();
+        window.location.href = url;
+      }
+    } catch (error) {
+      console.error('Error opening customer portal:', error);
+      toast.error('Failed to open portal.');
+    }
+  };
+
+  const handleCancelSubscription = async () => {
+    if (!auth.currentUser) return;
+
+    try {
+      const userDoc = await getDoc(doc(db, 'users', auth.currentUser.uid));
+      if (userDoc.exists()) {
+        const subscriptionId = userDoc.data().subscription?.stripeSubscriptionId;
+        if (!subscriptionId) {
+          toast.error('No Subscription ID found.');
+          return;
+        }
+
+        await fetch('http://localhost:5000/cancel-subscription', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ subscriptionId }),
+        });
+
+        toast.success('Subscription cancelled.');
+        navigate('/billing');
+      }
+    } catch (error) {
+      console.error('Error cancelling subscription:', error);
+      toast.error('Failed to cancel.');
+    }
+  };
+
   if (loading) {
-    return (
-      <div className="min-h-screen flex flex-col bg-gray-100 dark:bg-gray-900 text-white">
-        <Topbar />
-        <main className="flex-1 flex items-center justify-center">
-          {t.loadingBillingInfo || "Loading billing info..."}
-        </main>
-        <BottomNav />
-      </div>
-    );
+    return <div>Loading...</div>;
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-white">
+    <div className="p-6">
       <Topbar />
-      <main className="flex-1 p-6 flex flex-col items-center">
-        <GoToDashboardButton />
+      <h1 className="text-3xl font-bold text-center mb-6">Billing Info</h1>
 
-        <div className="w-full max-w-2xl text-center mt-8">
-          <h1 className="text-3xl font-bold mb-6">{t.billingInfo}</h1>
+      {/* Plan Selection */}
+      <div className="flex gap-4 justify-center mb-6">
+        <select value={selectedPlan} onChange={(e) => setSelectedPlan(e.target.value)} className="p-2 border rounded">
+          <option value="basic">Basic Plan</option>
+          <option value="premium">Premium Plan</option>
+          <option value="pro">Pro Plan</option>
+        </select>
 
-          {/* Subscription */}
-          {subscription ? (
-            <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md mb-8">
-              <h2 className="text-xl font-semibold mb-2">{t.currentPlan || "Current Plan"}: {subscription.plan}</h2>
-              <p className="text-gray-500 dark:text-gray-400 mb-2">{t.price || "Price"}: {subscription.price}</p>
-              <p className="text-gray-500 dark:text-gray-400">{t.cardEnding || "Card ending in"} {subscription.cardLast4}</p>
-            </div>
-          ) : (
-            <p className="text-gray-500 dark:text-gray-400 mb-8">{t.noSubscription || "No active subscription found."}</p>
-          )}
+        <select value={billingCycle} onChange={(e) => setBillingCycle(e.target.value)} className="p-2 border rounded">
+          <option value="weekly">Weekly</option>
+          <option value="biweekly">Every 2 Weeks ($10 Off)</option>
+          <option value="monthly">Monthly ($15 Off)</option>
+        </select>
+      </div>
 
-          {/* Transactions */}
-          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md w-full">
-            <h2 className="text-xl font-semibold mb-4">{t.transactionHistory || "Transaction History"}</h2>
+      {/* Buttons */}
+      <div className="flex gap-4 justify-center mb-10">
+        <button onClick={handleCheckout} className="bg-purple-600 px-6 py-3 text-white rounded-lg hover:bg-purple-700">Upgrade Plan</button>
+        <button onClick={handleManageSubscription} className="bg-blue-600 px-6 py-3 text-white rounded-lg hover:bg-blue-700">Manage Subscription</button>
+        <button onClick={handleCancelSubscription} className="bg-red-600 px-6 py-3 text-white rounded-lg hover:bg-red-700">Cancel Subscription</button>
+      </div>
 
-            {transactions.length > 0 ? (
-              <div className="space-y-4 text-sm">
-                {transactions.map(txn => (
-                  <div key={txn.id} className="flex justify-between border-b pb-2">
-                    <div>
-                      <p className="font-semibold">{txn.plan}</p>
-                      <p className="text-gray-500 dark:text-gray-400">{new Date(txn.createdAt?.seconds * 1000).toLocaleDateString()}</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="font-semibold">${txn.amount}</p>
-                      <p className={txn.status === 'Success' ? 'text-green-400' : 'text-red-400'}>
-                        {txn.status === 'Success' ? (t.success || "Success") : (t.failed || "Failed")}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-gray-500 dark:text-gray-400">{t.noTransactions || "No past transactions found."}</p>
-            )}
-          </div>
+      {/* Subscription Info */}
+      {subscription && (
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md text-center">
+          <h2 className="text-xl font-semibold mb-2">Current Plan: {subscription.plan}</h2>
+          <p>Billing: {subscription.billingCycle}</p>
+          <p>Price: {subscription.price}</p>
+          <p>Status: {subscription.status}</p>
+          <p>Next Billing Date: {subscription.nextBillingDate ? new Date(subscription.nextBillingDate * 1000).toLocaleDateString() : '-'}</p>
         </div>
-      </main>
+      )}
+
       <BottomNav />
     </div>
   );
