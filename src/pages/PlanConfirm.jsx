@@ -1,4 +1,3 @@
-// src/pages/PlanConfirm.jsx
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { auth, db } from '../firebaseConfig';
@@ -10,36 +9,41 @@ import GoToDashboardButton from '../components/GoToDashboardButton';
 const PlanConfirm = () => {
   const navigate = useNavigate();
   const [selectedPlan, setSelectedPlan] = useState('');
+  const [loadingUser, setLoadingUser] = useState(true);
 
   useEffect(() => {
     const plan = localStorage.getItem('selectedPlan');
     if (plan) {
       setSelectedPlan(plan);
     } else {
-      navigate('/select-plan'); // If no plan selected, redirect
+      navigate('/select-plan');
     }
   }, [navigate]);
 
-  const handleConfirm = async () => {
-    if (!auth.currentUser) {
-      navigate('/login');
-      return;
-    }
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      if (!user) {
+        navigate('/login');
+      }
+      setLoadingUser(false);
+    });
+    return () => unsubscribe();
+  }, [navigate]);
 
+  const handleConfirm = async () => {
     try {
       const userRef = doc(db, 'users', auth.currentUser.uid);
       await setDoc(userRef, {
         subscription: {
           name: selectedPlan,
           activatedAt: serverTimestamp(),
-          price: selectedPlan === 'Pro' ? '$19/mo' : selectedPlan === 'Elite' ? '$49/mo' : '$0/mo'
+          price: selectedPlan === 'Pro' ? '$19/mo' : selectedPlan === 'Elite' ? '$49/mo' : '$0/mo',
         }
-      }, { merge: true }); // ✅ merge keeps other fields like email safe!
+      }, { merge: true });
 
-      // ✅ After saving, go to checkout simulation
       navigate('/checkout');
     } catch (error) {
-      console.error('Error saving subscription:', error);
+      console.error('Error confirming plan:', error);
     }
   };
 
@@ -47,19 +51,23 @@ const PlanConfirm = () => {
     navigate('/select-plan');
   };
 
+  if (loadingUser) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-white">
+        Loading...
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex flex-col bg-gray-100 dark:bg-gray-900 text-white">
       <Topbar />
-
       <main className="flex-1 p-6 flex flex-col items-center justify-center">
         <GoToDashboardButton />
-
         <h1 className="text-2xl font-bold mb-4">Confirm Your Plan</h1>
-
         <div className="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-md text-center">
           <h2 className="text-lg mb-2 text-gray-900 dark:text-white">Selected Plan:</h2>
           <p className="text-xl font-bold text-blue-400 mb-6">{selectedPlan}</p>
-
           <div className="flex gap-4 justify-center">
             <button
               onClick={handleConfirm}
@@ -76,7 +84,6 @@ const PlanConfirm = () => {
           </div>
         </div>
       </main>
-
       <BottomNav />
     </div>
   );

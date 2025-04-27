@@ -1,34 +1,36 @@
+// src/components/ProtectedRoute.jsx
 import React, { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
-import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from '../firebaseConfig';
+import { Loader2 } from 'lucide-react';
 
 const ProtectedRoute = ({ children }) => {
-  const [user, setUser] = useState(null);
-  const [checking, setChecking] = useState(true);
+  const [loading, setLoading] = useState(true);
+  const [authenticated, setAuthenticated] = useState(false);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
-      setUser(firebaseUser);
-      setChecking(false);
+    const unsubscribe = auth.onAuthStateChanged(user => {
+      setAuthenticated(!!user);
+      setLoading(false);
     });
 
     return () => unsubscribe();
   }, []);
 
-  if (checking) {
+  if (loading) {
     return (
-      <div className="min-h-screen flex justify-center items-center text-white">
-        Checking authentication...
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-white transition-all duration-300">
+        <Loader2 className="animate-spin w-10 h-10 mb-4" />
+        <p className="text-sm">Checking your session...</p>
       </div>
     );
   }
 
-  if (!user) {
+  if (!authenticated) {
     return <Navigate to="/login" replace />;
   }
 
-  return children;
+  return children; // ✅ No extra div around children, no extra animation problem
 };
 
 export default ProtectedRoute;
