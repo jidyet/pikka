@@ -5,6 +5,7 @@ import Topbar from '../components/Topbar';
 import BottomNav from '../components/BottomNav';
 import GoToDashboardButton from '../components/GoToDashboardButton';
 import { useLanguage } from '../hooks/useLanguage'; // 🛜 Now working correctly
+import { auth } from '../firebaseConfig'; // ⬅️ Import auth
 
 const slides = [
   {
@@ -35,9 +36,17 @@ const slides = [
 ];
 
 const Welcome = () => {
-  const { t } = useLanguage(); // 🛜 Pull translations
+  const { t } = useLanguage();
   const [current, setCurrent] = useState(0);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      setIsLoggedIn(!!user);
+    });
+    return () => unsubscribe();
+  }, []);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -46,10 +55,19 @@ const Welcome = () => {
     return () => clearInterval(timer);
   }, []);
 
+  // Redirect handler for Topbar/BottomNav
+  const handleProtectedNavigation = (path) => {
+    if (!isLoggedIn) {
+      navigate('/login');
+    } else {
+      navigate(path);
+    }
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-gray-100 dark:bg-gray-900 text-white">
-      <Topbar />
-
+      <Topbar onNavigate={handleProtectedNavigation} />
+      
       <main className="flex-1 flex flex-col items-center justify-center p-6">
         <GoToDashboardButton />
 
@@ -104,7 +122,7 @@ const Welcome = () => {
         </div>
       </main>
 
-      <BottomNav />
+      <BottomNav onNavigate={handleProtectedNavigation} />
     </div>
   );
 };
